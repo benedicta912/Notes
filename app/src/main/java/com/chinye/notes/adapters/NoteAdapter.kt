@@ -7,7 +7,7 @@ import com.chinye.notes.databinding.ActivityNoteDetailsBinding
 import com.chinye.notes.databinding.NoteItemBinding
 import com.chinye.notes.models.Note
 
-class NoteAdapter(private val notes: List<Note>, val clicker: (Note) -> Unit): RecyclerView.Adapter<NoteAdapter.NoteViewHolder>(){
+class NoteAdapter(var notes: List<Note>, val clicker: (Note) -> Unit): RecyclerView.Adapter<NoteAdapter.NoteViewHolder>(){
 
    inner class NoteViewHolder(private val binding: NoteItemBinding): RecyclerView.ViewHolder(binding.root) {
         fun bind(note: Note) {

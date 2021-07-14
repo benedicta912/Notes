@@ -16,7 +16,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var database: NoteDatabase
-    private lateinit var noteAdapter : NoteAdapter
+    private lateinit var noteAdapter: NoteAdapter
     private lateinit var viewModel: MainActivityViewModel
 
 
@@ -24,61 +24,49 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
 //instantiating database
-        database = Room.databaseBuilder(
-            applicationContext,
-            NoteDatabase::class.java,
-            "notes_database"
-        ).allowMainThreadQueries().build()
+
+        database = NoteDatabase.getInstance(applicationContext)
 
 //instantiating viewModel
-        viewModel =  ViewModelProvider(this)[MainActivityViewModel::class.java]
+        viewModel = ViewModelProvider(this)[MainActivityViewModel::class.java]
         viewModel.getNotes((database))
 
-        //observe live data
-        viewModel.notesLiveData.observe(this, { notes ->
-            noteAdapter = NoteAdapter(database.noteDao().getAllNotes()) {
-                val intent = Intent(this@MainActivity, NoteDetailsActivity::class.java)
-                intent.run {
-                    putExtra("id", it.id)
-                    startActivity(this,)
-                }
+        //instantiate adapter with empty dataset
+        noteAdapter = NoteAdapter(listOf<Note>()) {
+            val intent = Intent(this@MainActivity, NoteDetailsActivity::class.java)
+            intent.run {
+                putExtra("id", it.id)
+                putExtra("content", it.content)
+                putExtra("title", it.title)
             }
+            startActivity(intent)
+        }
 
-            //refreshing recycler view
-            binding.recyclerView.apply {
-                layoutManager = LinearLayoutManager(this@MainActivity)
-                adapter = noteAdapter
-            }
+        //refreshing recycler view
+        binding.recyclerView.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = noteAdapter
+        }
+
+
+//observe live data from view model
+        viewModel.notesLiveData.observe(this, { notes ->
+            noteAdapter.notes = notes
+            noteAdapter.notifyDataSetChanged()
         })
 
-
-
-
-        binding.button.setOnClickListener{
+        binding.button.setOnClickListener {
             val title = binding.titleInput.text.toString()
-            val content = binding.contentInput.toString()
+            val content = binding.contentInput.text.toString()
 
             saveNote(title, content)
         }
-
     }
 
-
-    private fun saveNote(title: String, content: String){
+    private fun saveNote(title: String, content: String) {
         val note = Note(id = 0, title, content)
-        database.noteDao().addNote(note)
-        binding.recyclerView.adapter?.notifyDataSetChanged()
-    }
-
-    private val listener = object: NoteAdapter.OnNoteItemClickListener{
-        override fun onClick(note: Note) {
-            val intent = Intent(this@MainActivity, NoteDetailsActivity::class.java)
-            intent.run {
-                putExtra("id", note.id)
-                startActivity(this)
-            }
-        }
-
+        viewModel.addNote(database, note)
     }
 }
